@@ -1,0 +1,72 @@
+[
+  {
+    "id": "alfuttaim",
+    "name": "Al-Futtaim Automall",
+    "website": "https://www.automalluae.com",
+    "inventory_source": "Authorized Dealer API / SFTP",
+    "source_url": "https://api.automalluae.com/v2/inventory",
+    "location": "Dubai Festival City & Airport Road Abu Dhabi",
+    "contact_phone": "+971 800 28866255",
+    "contact_email": "customercare@automalluae.com",
+    "is_active": true,
+    "last_updated": "2026-10-10 09:30 GST",
+    "total_listings": 1240,
+    "inspection_standard": "99-Point Automall Multi-Check"
+  },
+  {
+    "id": "cars24",
+    "name": "CARS24 UAE",
+    "website": "https://www.cars24.com/ae",
+    "inventory_source": "Digital Hub Cloud Feed",
+    "source_url": "https://feed.cars24.com/ae/vehicles",
+    "location": "Jebel Ali Mega MRL & Al Quoz Dubai",
+    "contact_phone": "+971 800 227724",
+    "contact_email": "care.uae@cars24.com",
+    "is_active": true,
+    "last_updated": "2026-10-10 08:15 GST",
+    "total_listings": 890,
+    "inspection_standard": "150-Point Certified Lab Inspection"
+  },
+  {
+    "id": "kavak",
+    "name": "Kavak UAE",
+    "website": "https://www.kavak.com/ae",
+    "inventory_source": "Kavak Hub REST API",
+    "source_url": "https://api.kavak.com/ae/catalog/v1",
+    "location": "Dubai Festival Plaza & Sharjah Hub",
+    "contact_phone": "+971 4 800 52825",
+    "contact_email": "support.ae@kavak.com",
+    "is_active": true,
+    "last_updated": "2026-10-09 18:45 GST",
+    "total_listings": 650,
+    "inspection_standard": "240-Point Rigorous Reconditioning"
+  },
+  {
+    "id": "carswitch",
+    "name": "CarSwitch",
+    "website": "https://www.carswitch.com",
+    "inventory_source": "Certified Marketplace Feed",
+    "source_url": "https://inventory.carswitch.com/export/certified.json",
+    "location": "Sheikh Zayed Road Dubai & Abu Dhabi",
+    "contact_phone": "+971 4 556 7800",
+    "contact_email": "assist@carswitch.com",
+    "is_active": true,
+    "last_updated": "2026-10-10 10:00 GST",
+    "total_listings": 1100,
+    "inspection_standard": "CarSwitch Certified 5-Star Rating"
+  },
+  {
+    "id": "theelitecars",
+    "name": "The Elite Cars",
+    "website": "https://www.theelitecars.com",
+    "inventory_source": "Bespoke Luxury Inventory Feed",
+    "source_url": "https://theelitecars.com/feeds/luxury-export.xml",
+    "location": "Sheikh Zayed Road (Al Quoz 3), Dubai",
+    "contact_phone": "+971 4 397 3333",
+    "contact_email": "sales@theelitecars.com",
+    "is_active": true,
+    "last_updated": "2026-10-09 16:20 GST",
+    "total_listings": 340,
+    "inspection_standard": "Bespoke Master Luxury Certification"
+  }
+]

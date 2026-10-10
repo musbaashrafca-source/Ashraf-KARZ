@@ -1,0 +1,6 @@
+{
+  "name": "UAE Preowned Car Aggregator & Market Intelligence",
+  "description": "Unified UAE preowned car aggregator covering Al-Futtaim Automall, CARS24, Kavak, CarSwitch, and The Elite Cars with cross-dealer price analytics and buyer assistance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
