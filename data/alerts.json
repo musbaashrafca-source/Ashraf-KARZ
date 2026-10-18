@@ -1,0 +1,19 @@
+[
+  {
+    "id": "alert-1792339289542",
+    "vehicle_id": "AFA-LC300-01",
+    "vehicle_title": "2023 Toyota Land Cruiser (300 VXR 3.5L Twin-Turbo)",
+    "vehicle_make": "Toyota",
+    "vehicle_model": "Land Cruiser",
+    "vehicle_year": 2023,
+    "dealer_name": "Al-Futtaim Automall",
+    "initial_price_aed": 319000,
+    "current_price_aed": 319000,
+    "target_price_aed": 305000,
+    "user_email": "ashrafmusba@gmail.com",
+    "created_at": "2026-10-18 16:01 GST",
+    "status": "triggered",
+    "triggered_at": "2026-10-18 16:01 GST",
+    "triggered_price_aed": 304000
+  }
+]

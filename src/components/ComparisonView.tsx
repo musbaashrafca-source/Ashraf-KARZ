@@ -13,6 +13,7 @@ import {
   ExternalLink,
   ChevronDown
 } from 'lucide-react';
+import { getVehicleImage } from '../utils/carImages';
 
 interface ComparisonViewProps {
   compareList: Vehicle[];
@@ -367,8 +368,16 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                       {/* Image */}
                       <div className="aspect-4/3 rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
                         <img
-                          src={vehicle.photos[0] || '/src/assets/images/hero_uae_luxury_fleet_1791627589055.jpg'}
+                          src={getVehicleImage(vehicle)}
                           alt={vehicle.model}
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            const fallback = getVehicleImage(null);
+                            if (target.src !== fallback) {
+                              target.src = fallback;
+                            }
+                          }}
                           className="w-full h-full object-cover"
                         />
                       </div>

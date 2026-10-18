@@ -13,9 +13,15 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const DATA_DIR = path.resolve(__dirname, 'data');
 const DEALERS_FILE = path.join(DATA_DIR, 'dealers.json');
 const VEHICLES_FILE = path.join(DATA_DIR, 'vehicles.json');
+const ALERTS_FILE = path.join(DATA_DIR, 'alerts.json');
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static images and assets directly
+app.use('/src/assets', express.static(path.resolve(__dirname, 'src/assets')));
+app.use('/assets', express.static(path.resolve(__dirname, 'public/assets')));
+app.use(express.static(path.resolve(__dirname, 'public')));
 
 // Helper to read data
 function getDealers() {
@@ -38,6 +44,37 @@ function getVehicles() {
 
 function saveVehicles(data: any[]) {
   fs.writeFileSync(VEHICLES_FILE, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function getAlerts() {
+  if (fs.existsSync(ALERTS_FILE)) {
+    return JSON.parse(fs.readFileSync(ALERTS_FILE, 'utf-8'));
+  }
+  return [];
+}
+
+function saveAlerts(data: any[]) {
+  fs.writeFileSync(ALERTS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function evaluateAlerts(alerts: any[], vehicles: any[]) {
+  let updated = false;
+  alerts.forEach((alert: any) => {
+    const v = vehicles.find((veh: any) => veh.id === alert.vehicle_id);
+    if (v) {
+      alert.current_price_aed = v.price_aed;
+      if (alert.status === 'active' && v.price_aed <= alert.target_price_aed) {
+        alert.status = 'triggered';
+        alert.triggered_at = new Date().toISOString().replace('T', ' ').substring(0, 16) + ' GST';
+        alert.triggered_price_aed = v.price_aed;
+        updated = true;
+      }
+    }
+  });
+  if (updated) {
+    saveAlerts(alerts);
+  }
+  return alerts;
 }
 
 // ---------------------------------------------
@@ -376,7 +413,7 @@ app.post('/api/compare', (req, res) => {
     });
 
     // Sort descending by suitability score
-    scoredVehicles.sort((a, b) => b.suitability.overall_score - a.suitability.overall_score);
+    scoredVehicles.sort((a: any, b: any) => b.suitability.overall_score - a.suitability.overall_score);
 
     res.json({
       success: true,
@@ -504,6 +541,167 @@ app.get('/api/trending', (req, res) => {
         .filter((v: any) => v.original_price_aed > v.price_aed)
         .sort((a: any, b: any) => (b.original_price_aed - b.price_aed) - (a.original_price_aed - a.price_aed))
         .slice(0, 5)
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 6a. Live Inventory Feed Synchronization API
+app.post('/api/sync-live-inventory', (req, res) => {
+  exec('python3 python_engine/live_sync.py', { cwd: __dirname }, (error, stdout, stderr) => {
+    if (error) {
+      return res.status(500).json({ success: false, error: stderr || error.message });
+    }
+    try {
+      const dealers = getDealers();
+      const vehicles = getVehicles();
+      const lastUpdated = dealers[0]?.last_updated || '18 Oct 2026 16:10 GST';
+
+      res.json({
+        success: true,
+        last_updated: lastUpdated,
+        total_vehicles: vehicles.length,
+        total_dealers: dealers.length,
+        message: 'Successfully synchronized live inventory across Al-Futtaim, CARS24, Kavak, CarSwitch, and The Elite Cars.'
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+});
+
+// 6b. Price Drop Alerts API
+app.get('/api/alerts', (req, res) => {
+  try {
+    const rawAlerts = getAlerts();
+    const vehicles = getVehicles();
+    const alerts = evaluateAlerts(rawAlerts, vehicles);
+    const triggeredCount = alerts.filter((a: any) => a.status === 'triggered').length;
+    res.json({ success: true, alerts, triggeredCount });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/alerts', (req, res) => {
+  try {
+    const { vehicleId, targetPriceAed, userEmail } = req.body;
+    if (!vehicleId || !targetPriceAed) {
+      return res.status(400).json({ success: false, error: 'vehicleId and targetPriceAed are required' });
+    }
+
+    const vehicles = getVehicles();
+    const vehicle = vehicles.find((v: any) => v.id === vehicleId);
+    if (!vehicle) {
+      return res.status(404).json({ success: false, error: 'Vehicle not found' });
+    }
+
+    const alerts = getAlerts();
+    const existingIndex = alerts.findIndex((a: any) => a.vehicle_id === vehicleId);
+
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 16) + ' GST';
+    const numericTarget = parseFloat(targetPriceAed);
+    const isTriggered = vehicle.price_aed <= numericTarget;
+
+    const alertObj = {
+      id: existingIndex >= 0 ? alerts[existingIndex].id : `alert-${Date.now()}`,
+      vehicle_id: vehicle.id,
+      vehicle_title: `${vehicle.year} ${vehicle.make} ${vehicle.model} (${vehicle.variant})`,
+      vehicle_make: vehicle.make,
+      vehicle_model: vehicle.model,
+      vehicle_year: vehicle.year,
+      dealer_name: vehicle.dealer_name,
+      initial_price_aed: vehicle.price_aed,
+      current_price_aed: vehicle.price_aed,
+      target_price_aed: numericTarget,
+      user_email: userEmail || 'buyer@karz4u.ae',
+      created_at: now,
+      status: isTriggered ? 'triggered' : 'active',
+      triggered_at: isTriggered ? now : undefined,
+      triggered_price_aed: isTriggered ? vehicle.price_aed : undefined
+    };
+
+    if (existingIndex >= 0) {
+      alerts[existingIndex] = alertObj;
+    } else {
+      alerts.unshift(alertObj);
+    }
+
+    saveAlerts(alerts);
+    res.json({
+      success: true,
+      alert: alertObj,
+      message: isTriggered ? 'Target price met immediately!' : 'Price alert registered successfully'
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/alerts/:id', (req, res) => {
+  try {
+    let alerts = getAlerts();
+    alerts = alerts.filter((a: any) => a.id !== req.params.id);
+    saveAlerts(alerts);
+    res.json({ success: true, message: 'Alert removed' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/alerts/:id/dismiss', (req, res) => {
+  try {
+    const alerts = getAlerts();
+    const alert = alerts.find((a: any) => a.id === req.params.id);
+    if (alert) {
+      alert.status = 'dismissed';
+      saveAlerts(alerts);
+    }
+    res.json({ success: true, alert });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Utility to simulate price drop for testing target price triggers
+app.post('/api/alerts/simulate-drop', (req, res) => {
+  try {
+    const { vehicleId, dropAmount, targetPrice } = req.body;
+    const vehicles = getVehicles();
+    const vehicle = vehicles.find((v: any) => v.id === vehicleId);
+    if (!vehicle) {
+      return res.status(404).json({ success: false, error: 'Vehicle not found' });
+    }
+
+    const previousPrice = vehicle.price_aed;
+    const newPrice = targetPrice
+      ? parseFloat(targetPrice)
+      : Math.max(10000, previousPrice - (parseFloat(dropAmount) || 12000));
+    vehicle.price_aed = newPrice;
+    const today = new Date().toISOString().substring(0, 10);
+    vehicle.price_history.push({
+      date: today,
+      price_aed: newPrice,
+      note: `Price reduction observed (-AED ${(previousPrice - newPrice).toLocaleString()})`
+    });
+    vehicle.last_observed_date = today;
+    saveVehicles(vehicles);
+
+    // Evaluate alerts
+    const alerts = getAlerts();
+    const evaluated = evaluateAlerts(alerts, vehicles);
+    const triggered = evaluated.filter(
+      (a: any) => a.vehicle_id === vehicleId && a.status === 'triggered'
+    );
+
+    res.json({
+      success: true,
+      vehicle,
+      previousPrice,
+      newPrice,
+      triggeredAlerts: triggered,
+      message: `Price drop applied to ${vehicle.make} ${vehicle.model}: AED ${previousPrice.toLocaleString()} -> AED ${newPrice.toLocaleString()}`
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });

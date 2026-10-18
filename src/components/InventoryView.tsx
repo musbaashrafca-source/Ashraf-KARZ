@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Vehicle } from '../types';
+import { Vehicle, PriceAlert } from '../types';
 import {
   Search,
   Filter,
@@ -13,23 +13,40 @@ import {
   AlertCircle,
   X,
   MapPin,
-  ChevronDown
+  ChevronDown,
+  Bell,
+  RefreshCw,
+  Radio,
+  Calendar,
+  Zap,
+  Sparkles
 } from 'lucide-react';
+import { getVehicleImage } from '../utils/carImages';
 
 interface InventoryViewProps {
   vehicles: Vehicle[];
+  alerts?: PriceAlert[];
   onSelectVehicle: (vehicle: Vehicle) => void;
   compareList: Vehicle[];
   onToggleCompare: (vehicle: Vehicle) => void;
   onOpenPythonDocs: () => void;
+  onOpenSetAlert: (vehicle: Vehicle) => void;
+  onSyncLive?: () => void;
+  isSyncing?: boolean;
+  lastSyncTimestamp?: string;
 }
 
 export const InventoryView: React.FC<InventoryViewProps> = ({
   vehicles,
+  alerts = [],
   onSelectVehicle,
   compareList,
   onToggleCompare,
   onOpenPythonDocs,
+  onOpenSetAlert,
+  onSyncLive,
+  isSyncing = false,
+  lastSyncTimestamp = '18 Oct 2026 16:30 GST',
 }) => {
   // Filter States
   const [search, setSearch] = useState('');
@@ -142,35 +159,103 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
       {/* Top Header Strip */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live Feeds Connected
+            </span>
+            <span className="text-xs text-slate-500 font-mono">
+              Last synced: <strong className="text-slate-800">{lastSyncTimestamp}</strong>
+            </span>
+          </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            UAE Consolidated Inventory
+            KARZ4U Consolidated UAE Inventory
           </h1>
           <p className="mt-1 text-sm text-slate-500 max-w-2xl">
-            Real-time aggregate listings across Al-Futtaim Automall, CARS24, Kavak, CarSwitch, and The Elite Cars. Full inspection, GCC spec, and history disclosures.
+            Live aggregate inventory across Al-Futtaim Automall, CARS24, Kavak, CarSwitch, and The Elite Cars. Full inspection, GCC spec, and history disclosures.
           </p>
         </div>
 
-        {/* Quick summary metric strip */}
-        <div className="flex items-center gap-6 text-xs text-slate-600 bg-slate-100/70 p-2.5 rounded-lg border border-slate-200">
-          <div>
-            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Active Listings</span>
-            <span className="font-mono font-bold text-slate-900 text-sm">{filteredVehicles.length}</span>
-          </div>
-          <div className="w-px h-6 bg-slate-300" />
-          <div>
-            <span className="text-slate-400 block text-[10px] uppercase font-semibold">GCC Spec</span>
-            <span className="font-mono font-bold text-slate-900 text-sm">
-              {filteredVehicles.filter((v) => v.specification === 'GCC').length}
-            </span>
-          </div>
-          <div className="w-px h-6 bg-slate-300" />
-          <div>
-            <span className="text-slate-400 block text-[10px] uppercase font-semibold">Price Drops</span>
-            <span className="font-mono font-bold text-emerald-700 text-sm">
-              {filteredVehicles.filter((v) => v.original_price_aed > v.price_aed).length}
-            </span>
+        {/* Action Controls: Live Sync Now & Quick Metrics */}
+        <div className="flex items-center gap-3">
+          {onSyncLive && (
+            <button
+              onClick={onSyncLive}
+              disabled={isSyncing}
+              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all flex items-center gap-2 shadow-xs disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Syncing Live Feeds...' : 'Sync Live Inventory'}</span>
+            </button>
+          )}
+
+          {/* Quick summary metric strip */}
+          <div className="flex items-center gap-4 text-xs text-slate-600 bg-slate-100/80 p-2.5 rounded-lg border border-slate-200">
+            <div>
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Active Listings</span>
+              <span className="font-mono font-bold text-slate-900 text-sm">{filteredVehicles.length}</span>
+            </div>
+            <div className="w-px h-6 bg-slate-300" />
+            <div>
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">GCC Spec</span>
+              <span className="font-mono font-bold text-slate-900 text-sm">
+                {filteredVehicles.filter((v) => v.specification === 'GCC').length}
+              </span>
+            </div>
+            <div className="w-px h-6 bg-slate-300" />
+            <div>
+              <span className="text-slate-400 block text-[10px] uppercase font-semibold">Price Drops</span>
+              <span className="font-mono font-bold text-emerald-700 text-sm">
+                {filteredVehicles.filter((v) => v.original_price_aed > v.price_aed).length}
+              </span>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Quick Dealer & Filter Chips Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <span className="text-slate-400 font-semibold text-[11px] uppercase mr-1 shrink-0">Quick Filter:</span>
+        <button
+          onClick={() => setSelectedDealer('all')}
+          className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors border ${
+            selectedDealer === 'all'
+              ? 'bg-slate-900 text-white border-slate-900'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          All Dealerships ({vehicles.length})
+        </button>
+
+        {dealers.map((d) => {
+          const count = vehicles.filter((v) => v.dealer_name === d).length;
+          return (
+            <button
+              key={d}
+              onClick={() => setSelectedDealer(selectedDealer === d ? 'all' : d)}
+              className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors border ${
+                selectedDealer === d
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {d} ({count})
+            </button>
+          );
+        })}
+
+        <button
+          onClick={() => {
+            setSelectedSpec(selectedSpec === 'GCC' ? 'all' : 'GCC');
+          }}
+          className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors border ${
+            selectedSpec === 'GCC'
+              ? 'bg-emerald-700 text-white border-emerald-700'
+              : 'bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50'
+          }`}
+        >
+          GCC Spec Only ({vehicles.filter((v) => v.specification === 'GCC').length})
+        </button>
       </div>
 
       {/* Main Filter Bar & Controls */}
@@ -382,6 +467,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredVehicles.map((vehicle) => {
             const inCompare = isVehicleInCompare(vehicle.id);
+            const vehicleAlert = alerts.find((a) => a.vehicle_id === vehicle.id && a.status !== 'dismissed');
             const priceDropped = vehicle.original_price_aed > vehicle.price_aed;
             const dropAmount = vehicle.original_price_aed - vehicle.price_aed;
 
@@ -393,9 +479,16 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 {/* 1. Vehicle Image Container */}
                 <div className="relative aspect-4/3 bg-slate-100 overflow-hidden">
                   <img
-                    src={vehicle.photos[0] || '/src/assets/images/hero_uae_luxury_fleet_1791627589055.jpg'}
+                    src={getVehicleImage(vehicle)}
                     alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fallback = getVehicleImage(null);
+                      if (target.src !== fallback) {
+                        target.src = fallback;
+                      }
+                    }}
                     className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                   />
 
@@ -430,13 +523,18 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 {/* 2. Card Content */}
                 <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                   <div>
-                    {/* Quiet unboxed metadata: Year · Mileage · Engine */}
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
-                      <span>{vehicle.year}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>{vehicle.mileage_km.toLocaleString()} km</span>
-                      <span aria-hidden="true">·</span>
-                      <span>{vehicle.fuel_type}</span>
+                    {/* Quiet unboxed metadata: Year · Mileage · Engine · Live Listing Date */}
+                    <div className="flex items-center justify-between text-xs text-slate-500 font-mono mb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-800">{vehicle.year}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{vehicle.mileage_km.toLocaleString()} km</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{vehicle.fuel_type}</span>
+                      </div>
+                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-sans font-semibold border border-emerald-200">
+                        {vehicle.listing_date ? `Listed ${vehicle.listing_date}` : 'Live'}
+                      </span>
                     </div>
 
                     {/* Vehicle Title */}
@@ -497,6 +595,39 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     >
                       <Eye className="w-3.5 h-3.5 text-slate-600" />
                       <span>View Dossier</span>
+                    </button>
+
+                    <button
+                      onClick={() => onOpenSetAlert(vehicle)}
+                      className={`py-2 px-2.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1 border ${
+                        vehicleAlert
+                          ? vehicleAlert.status === 'triggered'
+                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                            : 'bg-amber-100 text-amber-900 border-amber-300'
+                          : 'bg-slate-100 border-transparent text-slate-700 hover:bg-slate-200'
+                      }`}
+                      title={
+                        vehicleAlert
+                          ? vehicleAlert.status === 'triggered'
+                            ? `Target reached! Price dropped to AED ${vehicle.price_aed.toLocaleString()}`
+                            : `Watching target: AED ${vehicleAlert.target_price_aed.toLocaleString()}`
+                          : 'Set Target Price Alert'
+                      }
+                    >
+                      <Bell
+                        className={`w-3.5 h-3.5 ${
+                          vehicleAlert
+                            ? vehicleAlert.status === 'triggered'
+                              ? 'text-emerald-700 fill-emerald-700'
+                              : 'text-amber-700 fill-amber-700'
+                            : 'text-slate-600'
+                        }`}
+                      />
+                      {vehicleAlert && (
+                        <span className="font-mono text-[10px] font-bold hidden sm:inline">
+                          {vehicleAlert.status === 'triggered' ? 'Hit!' : `${Math.round(vehicleAlert.target_price_aed / 1000)}k`}
+                        </span>
+                      )}
                     </button>
 
                     <button

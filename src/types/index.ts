@@ -131,3 +131,22 @@ export interface MarketOverview {
   fuel_breakdown: Record<string, number>;
   body_type_breakdown: Record<string, number>;
 }
+
+export interface PriceAlert {
+  id: string;
+  vehicle_id: string;
+  vehicle_title: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_year: number;
+  dealer_name: string;
+  initial_price_aed: number;
+  current_price_aed: number;
+  target_price_aed: number;
+  user_email?: string;
+  created_at: string;
+  status: 'active' | 'triggered' | 'dismissed';
+  triggered_at?: string;
+  triggered_price_aed?: number;
+}
+

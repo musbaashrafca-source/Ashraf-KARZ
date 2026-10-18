@@ -45,7 +45,7 @@ def run_cli():
     if args.action == "summary":
         overview = MarketAnalytics.generate_market_overview(vehicles)
         print("=" * 64)
-        print("  UAE PREOWNED CAR AGGREGATOR — MARKET OVERVIEW")
+        print("  KARZ4U — UAE PREOWNED CAR AGGREGATOR & MARKET INTELLIGENCE")
         print("  Top 5 Dealers: Automall, CARS24, Kavak, CarSwitch, The Elite Cars")
         print("=" * 64)
         print(f"Total Aggregated Listings: {overview.get('total_vehicles', 0)}")

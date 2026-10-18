@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Vehicle, CrossDealerBenchmark } from '../types';
+import { Vehicle, CrossDealerBenchmark, PriceAlert } from '../types';
 import {
   X,
   ExternalLink,
@@ -15,23 +15,29 @@ import {
   ChevronRight,
   TrendingDown,
   Info,
-  Car
+  Car,
+  Bell
 } from 'lucide-react';
+import { getVehicleImage } from '../utils/carImages';
 
 interface VehicleDetailModalProps {
   vehicle: Vehicle | null;
   benchmark?: CrossDealerBenchmark | null;
+  alert?: PriceAlert | null;
   onClose: () => void;
   onToggleCompare: (vehicle: Vehicle) => void;
   isInCompare: boolean;
+  onOpenSetAlert?: (vehicle: Vehicle) => void;
 }
 
 export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
   vehicle,
   benchmark,
+  alert,
   onClose,
   onToggleCompare,
   isInCompare,
+  onOpenSetAlert,
 }) => {
   if (!vehicle) return null;
 
@@ -86,8 +92,16 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             <div className="space-y-3">
               <div className="aspect-4/3 bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
                 <img
-                  src={vehicle.photos[0] || '/src/assets/images/hero_uae_luxury_fleet_1791627589055.jpg'}
+                  src={getVehicleImage(vehicle)}
                   alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const fallback = getVehicleImage(null);
+                    if (target.src !== fallback) {
+                      target.src = fallback;
+                    }
+                  }}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -156,6 +170,35 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                       </span>
                     </div>
                   )}
+
+                  {/* Target Price Alert Box */}
+                  <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-amber-600 shrink-0" />
+                      <div>
+                        <span className="font-bold text-slate-900 block">
+                          {alert
+                            ? `Target Watch Active: AED ${alert.target_price_aed.toLocaleString()}`
+                            : 'Target Price Drop Alert'}
+                        </span>
+                        <span className="text-slate-500 text-[11px]">
+                          {alert
+                            ? alert.status === 'triggered'
+                              ? 'Target threshold met!'
+                              : `Will alert if dealer drops price by AED ${(vehicle.price_aed - alert.target_price_aed).toLocaleString()}`
+                            : 'Get notified when price drops below your budget'}
+                        </span>
+                      </div>
+                    </div>
+                    {onOpenSetAlert && (
+                      <button
+                        onClick={() => onOpenSetAlert(vehicle)}
+                        className="px-3 py-1 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg transition-colors shrink-0"
+                      >
+                        {alert ? 'Update Alert' : 'Set Target'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 

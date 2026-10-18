@@ -23,6 +23,8 @@ interface DealerAdminViewProps {
   vehicles: Vehicle[];
   onRefreshData: () => void;
   onOpenPythonDocs: () => void;
+  onSyncLive?: () => void;
+  isSyncing?: boolean;
 }
 
 export const DealerAdminView: React.FC<DealerAdminViewProps> = ({
@@ -30,6 +32,8 @@ export const DealerAdminView: React.FC<DealerAdminViewProps> = ({
   vehicles,
   onRefreshData,
   onOpenPythonDocs,
+  onSyncLive,
+  isSyncing = false,
 }) => {
   // CSV Import State
   const [selectedDealerForImport, setSelectedDealerForImport] = useState(dealers[0]?.id || 'alfuttaim');
@@ -160,6 +164,17 @@ WBA33AY08PFP10293,BMW,330i,M Sport 2.0L Turbo,2023,195000,205000,28000,Petrol,20
         </div>
 
         <div className="flex items-center gap-3">
+          {onSyncLive && (
+            <button
+              onClick={onSyncLive}
+              disabled={isSyncing}
+              className="px-3.5 py-2 text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Syncing...' : 'Sync Live Feeds'}</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenPythonDocs}
             className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5"
